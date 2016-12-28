@@ -73,6 +73,10 @@ class GaussWishart():
     def get_mean(self):
         return self.__m
 
+    def get_num_data(self):
+        return self.__N
+
+# ガウス分布の等高線を描画
 def draw_gauss( dist, rangex, rangey ):
     shape = ( len(rangex), len(rangey) )
     xx = numpy.zeros(shape)
@@ -82,8 +86,12 @@ def draw_gauss( dist, rangex, rangey ):
         for j,y in enumerate(rangey):
             xx[j,i] = x
             yy[j,i] = y
-            probs[j,i] = math.exp( dist.calc_loglik( numpy.array([x,y]) ) )
+            probs[j,i] = calc_probability( dist, numpy.array([x, y]) )
     pylab.contour( xx, yy, probs )
+
+    # 平均値を描画
+    m = dist.get_mean()
+    pylab.plot( m[0], m[1], "x" )
 
 
 # グラフに描画
@@ -103,14 +111,42 @@ def draw_data( data, classes, distributions, colors = ("r" , "b" , "g" , "c" , "
 def draw_line( p1 , p2 , color="k" ):
     pylab.plot( [p1[0], p2[0]] , [p1[1],p2[1]], color=color )
 
+def plot0(data, classes, distributions):
+    draw_data( data, classes, distributions )
+    pylab.draw()
+    pylab.pause(1.0)
+
+def plot1(d, data, classes, distributions):
+    draw_data( data, classes, distributions )
+    for k in range(len(distributions)):
+        draw_line( d , distributions[k].get_mean() )
+    pylab.draw()
+    pylab.pause(0.1)
+
+def plot2(d, k_new, data, classes, distributions):
+    draw_data( data, classes, distributions )
+    draw_line( d , distributions[k_new].get_mean() , "y" )
+    pylab.draw()
+    pylab.pause(0.1)
+
+def plot3(data, classes, distributions):
+    pylab.ioff()
+    draw_data( data, classes, distributions )
+    for d,k in zip(data,classes):
+        draw_line( d , distributions[k].get_mean() )
+    pylab.show()
+
+def calc_probability( dist, d ):
+    return dist.get_num_data() * math.exp( dist.calc_loglik( d ) )
+
 def sample_class( d, distributions ):
     K = len(distributions)
     P = [ 0.0 ] * K
 
     # 累積確率を計算
-    P[0] = math.exp( distributions[0].calc_loglik( d ) )
+    P[0] = calc_probability( distributions[0], d )
     for k in range(1,K):
-        P[k] = P[k-1] + math.exp( distributions[k].calc_loglik( d ) )
+        P[k] = P[k-1] + calc_probability( distributions[k], d )
 
     # サンプリング
     rnd = P[K-1] * random.random()
@@ -137,9 +173,7 @@ def gmm( data , K ):
         distributions[c].add_data(x)
 
     # グラフ表示
-    draw_data( data, classes, distributions )
-    pylab.draw()
-    pylab.pause(1.0)
+    plot0(data, classes, distributions)
 
     for it in range(100):
         # メインの処理
@@ -152,11 +186,7 @@ def gmm( data , K ):
             classes[i] = -1
 
             # グラフ表示
-            draw_data( data, classes, distributions )
-            for k in range(K):
-                draw_line( d , distributions[k].get_mean() )
-            pylab.draw()
-            pylab.pause(0.1)
+            plot1(d, data, classes, distributions)
 
             # 新たなクラスをサンプリング
             k_new = sample_class( d , distributions )
@@ -166,20 +196,15 @@ def gmm( data , K ):
             distributions[k_new].add_data( d )
 
             # グラフ表示
-            draw_data( data, classes, distributions )
-            draw_line( d , distributions[k_new].get_mean() , "y" )
-            pylab.draw()
-            pylab.pause(0.1)
+            plot2(d, k_new, data, classes, distributions)
+
 
     # 最終的な結果を表示
-    pylab.ioff()
-    draw_data( data, classes, distributions )
-    for d,k in zip(data,classes):
-        draw_line( d , distributions[k].get_mean() )
-    pylab.show()
+    plot3(data, classes, distributions)
+
 
 def main():
-    data = numpy.loadtxt( "data1.txt" )
+    data = numpy.loadtxt( "data2.txt" )
     gmm( data , 2 )
 
 
