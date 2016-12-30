@@ -27,7 +27,6 @@ class GaussWishart():
         self.__m = (self.__X + self.__r0 * self.__m0)/(self.__r0 + self.__N )
         self.__S = - self.__r * self.__m * self.__m.T + self.__C + self.__S0 + self.__r0 * self.__m0 * self.__m0.T;
 
-
     def add_data(self, x ):
         x = x.reshape((self.__dim,1))  # cƒxƒNƒgƒ‹‚É‚·‚é
         self.__X += x
@@ -35,7 +34,6 @@ class GaussWishart():
         self.__r += 1
         self.__nu += 1
         self.__N += 1
-
         self.__update_param()
 
     def delete_data(self, x ):
@@ -45,7 +43,6 @@ class GaussWishart():
         self.__r -= 1
         self.__nu -= 1
         self.__N -= 1
-
         self.__update_param()
 
     def calc_loglik(self, x):
@@ -77,7 +74,7 @@ class GaussWishart():
         return self.__N
 
 # ƒKƒEƒX•ª•z‚Ì“™‚ü‚ğ•`‰æ
-def draw_gauss( dist, rangex, rangey ):
+def draw_gauss( dist, rangex, rangey, color ):
     shape = ( len(rangex), len(rangey) )
     xx = numpy.zeros(shape)
     yy = numpy.zeros(shape)
@@ -86,12 +83,12 @@ def draw_gauss( dist, rangex, rangey ):
         for j,y in enumerate(rangey):
             xx[j,i] = x
             yy[j,i] = y
-            probs[j,i] = calc_probability( dist, numpy.array([x, y]) )
-    pylab.contour( xx, yy, probs )
+            probs[j,i] = math.exp( dist.calc_loglik( numpy.array([x,y]) ) )
+    pylab.contour( xx, yy, probs, colors=color, levels=[0.5] )
 
     # •½‹Ï’l‚ğ•`‰æ
     m = dist.get_mean()
-    pylab.plot( m[0], m[1], "x" )
+    pylab.plot( m[0], m[1], "x", color=color )
 
 
 # ƒOƒ‰ƒt‚É•`‰æ
@@ -104,8 +101,8 @@ def draw_data( data, classes, distributions, colors = ("r" , "b" , "g" , "c" , "
     # •ª•z‚ğ•`‰æ
     rangex = numpy.linspace( numpy.min(data[:,0]), numpy.max(data[:,0]), 50 )
     rangey = numpy.linspace( numpy.min(data[:,1]), numpy.max(data[:,1]), 50 )
-    for dist in distributions:
-        draw_gauss( dist, rangex, rangey )
+    for c,dist in enumerate(distributions):
+        draw_gauss( dist, rangex, rangey, colors[c] )
 
 
 def draw_line( p1 , p2 , color="k" ):
